@@ -11,8 +11,8 @@ import (
 	"mime"
 	"net/mail"
 	"bufio"
-	"aximailbuilder/mail-multipart"
-	"aximailbuilder/mail-textproto"
+	"github.com/axigenmessaging/mailbuilder/mail-multipart"
+	"github.com/axigenmessaging/mailbuilder/mail-textproto"
 )
 
 // read an email
@@ -115,6 +115,7 @@ func (d *MessageDecomposer) ReadParts(result *Message, bodyReader io.Reader) err
 			newPartEmail.RawOriginalHeader = part.RawOriginalHeader
 			newPartEmail.Idx = result.Idx
 			newPartEmail.rfc822Depth = result.rfc822Depth
+			newPartEmail.Parent = result
 
 			if newPartEmail.Idx != "" {
 				newPartEmail.Idx += "-"
@@ -148,6 +149,7 @@ func (d *MessageDecomposer) ReadParts(result *Message, bodyReader io.Reader) err
 				newMessage, err := d.Decompose(decodedBody, result.Idx+"-0")
 				if err == nil {
 					newMessage.rfc822Depth = result.rfc822Depth + 1
+					newMessage.Parent  = result
 					result.BodyMessage = newMessage
 
 					// Mark the body was decoded so we encode it back when recompose the email

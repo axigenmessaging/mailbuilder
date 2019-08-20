@@ -5,6 +5,7 @@ import (
 	"strings"
 	"bytes"
 	"bufio"
+	//"fmt"
 )
 
 type Message struct {
@@ -36,6 +37,9 @@ type Message struct {
 
 	// rfc822 depth
 	rfc822Depth       int
+
+	// the parent of the Message/Part
+	Parent       *Message
 }
 
 // check if the message is multipart
@@ -44,6 +48,12 @@ func (c *Message) IsMultipart() bool {
 		return true
 	}
 	return false
+}
+
+// append a part to message
+func (c *Message) AddPart(p *Message) {
+	p.Parent = c
+	c.Parts = append(c.Parts, p)
 }
 
 // check if the message is RFC822
@@ -81,4 +91,22 @@ func (c *Message) SetOriginalHeaderOrder(body []byte) {
 		}
 		c.RawOriginalHeader = append(c.RawOriginalHeader, lineByte...)
 	}
+}
+
+// copy into c Message the properties from m Message
+func (c *Message) Merge(m *Message) {
+	// keep the original headers, and rewrite only the new ones
+	for key, val := range m.Header {
+		if val[0] != "" {
+			c.Header.Set(key, val[0])
+		} else {
+			c.Header.Del(key)
+		}
+	}
+
+	c.BodyMessage  = m.BodyMessage
+	c.Body  = m.Body
+	c.Boundary  = m.Boundary
+	c.Parts = m.Parts
+	c.HeaderIsChanged = true
 }

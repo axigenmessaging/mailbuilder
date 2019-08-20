@@ -6,7 +6,9 @@ package mailbuilder
 
 import (
 	"bytes"
+	"strings"
 	"net/textproto"
+	//"fmt"
 )
 
 func NewMessageBuilder() MessageBuilder {
@@ -72,10 +74,13 @@ func (c *MessageBuilder) BuildHeader(m *Message) ([]byte) {
 	alreadyAdded := make(map[string]bool)
 	if m.HeaderOrder != nil && len(m.HeaderOrder) > 0 {
 		for _, headerCode := range m.HeaderOrder {
+			//fmt.Printf("Header Code: %v\r\n", headerCode)
 			if _, ok := m.Header[textproto.CanonicalMIMEHeaderKey(headerCode)]; ok {
 				if buff.String() != "" {
 					buff.WriteString(c.GetNewline())
 				}
+				//fmt.Printf("Header Value: %v\r\n\r\n", m.Header.Get(headerCode))
+
 				buff.WriteString(headerCode + ": " + m.Header.Get(headerCode))
 				alreadyAdded[textproto.CanonicalMIMEHeaderKey(headerCode)] = true
 			}
@@ -84,6 +89,11 @@ func (c *MessageBuilder) BuildHeader(m *Message) ([]byte) {
 
 	for key, _ := range m.Header {
 		if _, ok := alreadyAdded[key]; ok {
+			continue
+		}
+
+		tmp := m.Header.Get(key);
+		if tmp == "" {
 			continue
 		}
 		if buff.String() != "" {
@@ -131,5 +141,50 @@ func (c *MessageBuilder) BuildBody(m *Message) ([]byte) {
 	}
 
 	return buff.Bytes()
+}
+
+func (c *MessageBuilder) SetHeaderField(m *Message, field, value string) {
+	m.Header.Set(field, value)
+
+	if len(m.RawOriginalHeader) > 0 {
+		// Rewrite the original header if the field exists or add it to the end
+		originalHeader := string(bytes.TrimRight(m.RawOriginalHeader, "\r\n"))
+
+		firstPart := originalHeader
+		remainingPart := ""
+
+		idx := strings.Index(strings.ToLower(originalHeader), strings.ToLower(field))
+		if idx != -1 {
+			// The header field already exists
+			// Remove it to be added at the end
+			firstPart = originalHeader[:idx]
+			remainingPart = originalHeader[idx:]
+
+			for {
+				newLineIdx := strings.Index(remainingPart, "\n")
+				if newLineIdx != -1 {
+					if newLineIdx+1 > len(remainingPart)-1 {
+						break
+					}
+					remainingPart = remainingPart[newLineIdx+1:]
+					// Check if it's the end of the value: should be something
+					// different than space or tab (for multi-line values)
+					if !strings.HasPrefix(remainingPart, " ") && !strings.HasPrefix(remainingPart, "\t") {
+						break
+					}
+				} else {
+					break
+				}
+			}
+
+		}
+
+		originalHeader = strings.TrimRight(firstPart, "\r\n")
+		originalHeader += c.GetNewline()
+		originalHeader += field + ": " + value
+		originalHeader += remainingPart
+
+		m.RawOriginalHeader = []byte(originalHeader)
+	}
 }
 
