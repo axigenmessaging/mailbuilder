@@ -38,7 +38,8 @@ func EncodeByContentEncoding(body []byte, encoding string) []byte {
 func DecodeByContentEncoding(body []byte, encoding string) ([]byte, bool, error) {
 	switch encoding {
 	case "base64":
-		data, err := base64.StdEncoding.DecodeString(string(body))
+		//fmt.Println("-----------", string(body), "\r\n-------------")
+		data, err := base64.StdEncoding.DecodeString(strings.Trim(string(body), "\r\n\t"))
 		if err != nil {
 			return nil, false, err
 		}
