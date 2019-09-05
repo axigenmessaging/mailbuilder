@@ -21,7 +21,7 @@ func EncodeByContentEncoding(body []byte, encoding string) []byte {
 		base64.StdEncoding.Encode(b, body)
 		return ByteBreakLines(b, 76, "\n")
 	case "quoted-printable":
-		b := bytes.NewBuffer(body)
+		b := bytes.NewBuffer([]byte{})
 		qpWriter := quotedprintable.NewWriter(b)
 		qpWriter.Write(body)
 		qpWriter.Close()
