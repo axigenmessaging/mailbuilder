@@ -23,6 +23,7 @@ func EncodeByContentEncoding(body []byte, encoding string) []byte {
 	case "quoted-printable":
 		b := bytes.NewBuffer([]byte{})
 		qpWriter := quotedprintable.NewWriter(b)
+		qpWriter.Binary = true
 		qpWriter.Write(body)
 		qpWriter.Close()
 		return b.Bytes()
